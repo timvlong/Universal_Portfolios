@@ -17,7 +17,7 @@ insert_data_sql = open("sql/insert_data.sql", "r").read()
 db_access.execute(insert_data_sql)
 
 
-# Calculating the daily returns, ie filling the daily_returns table.
+# Calculating the price relatives, ie filling the price_relatives table.
 calc_returns_sql = open("sql/calc_returns.sql", "r").read()
 db_access.execute(calc_returns_sql)
 
@@ -25,4 +25,4 @@ db_access.execute(calc_returns_sql)
 # Printing the raw data table as a pandas DataFrame.
 print(db_access.execute("SELECT * FROM raw_daily_info").fetchdf())
 # Printing the daily returns table as a pandas DataFrame.
-print(db_access.execute("SELECT * FROM daily_returns").fetchdf())
+print(db_access.execute("SELECT * FROM price_relatives").fetchdf())

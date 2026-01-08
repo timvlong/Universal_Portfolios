@@ -1,4 +1,4 @@
--- Creating the schema, ie blueprint of the database.
+-- Creating the schema, ie the blueprint of the database.
 
 
 -- Deleting previous 'raw_daily_info' tables to ensure we replace data in our pipline and don't add to it.
@@ -14,12 +14,12 @@ CREATE TABLE raw_daily_info (
 );
 
 
--- Deleting previous 'daily_returns' tables.
-DROP TABLE IF EXISTS daily_returns;
--- Creating a table to store the daily return of each stock.
-CREATE TABLE daily_returns (
+-- Deleting previous 'price_relatives' tables.
+DROP TABLE IF EXISTS price_relatives;
+-- Creating a table to store the price relative of each stock, ie the ratio of closing to opening price of the stock.
+CREATE TABLE price_relatives (
     stock TEXT,
     date DATE,
     close DOUBLE,
-    daily_return DOUBLE
+    price_relative DOUBLE
 );
