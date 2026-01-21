@@ -12,14 +12,3 @@ CREATE TABLE raw_daily_info (
     -- Setting volume as a large integer, ie no decimals.
     volume BIGINT
 );
-
-
--- Deleting previous 'price_relatives' tables.
-DROP TABLE IF EXISTS price_relatives;
--- Creating a table to store the price relative of each stock, ie the ratio of closing to opening price of the stock.
-CREATE TABLE price_relatives (
-    stock TEXT,
-    date DATE,
-    close DOUBLE,
-    price_relative DOUBLE
-);
