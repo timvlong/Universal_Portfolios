@@ -75,6 +75,10 @@ portfolios = np.random.dirichlet(alphas, size=N)
 
 # Storing the number of days for which we have price relative data.
 days = len(price_rels_dict[stocks[0]])
+# Ensuring we have the same number of days of data for each stock so they are comparable.
+# For instance, can't compare BTC-USD against SPY long-term easily because bitcoin is traded over more days.
+for i in range(1, m):
+    assert days == len(price_rels_dict[stocks[i]]), "The data is not compatible. Please adapt the timeframe in consideration or ensure both stocks have data on the same days."
 
 
 # Giving each portfolio the same initial wealth of 1.
@@ -83,11 +87,8 @@ portfolio_wealths = np.ones(N)
 up_wealths = []
 up_wealth = 1
 up_wealths.append(up_wealth)
-# Creating the uniform portfolio.
-uniform_p = 1/m * np.ones(m)
-uniform_p_wealths = []
-uniform_p_wealth = 1
-uniform_p_wealths.append(uniform_p_wealth)
+# Storing the universal portfolio vectors over time for plotting later.
+ups = []
 
 
 # Iterating through each day to perform the 'Universal Portfolios' Algorithm.
@@ -99,15 +100,14 @@ for i in range(days):
     # If a portfolio has a larger wealth, you will trust that 'portfolio manager' more and use the stock proportions they did.
     # The @ here represents matrix multiplication.
     up = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
+    # Storing this universal portfolio vector.
+    ups.append(up)
     # Calculating the factor by which the wealth of this universal portfolio increases.
     # This is equal to the sum of the price relatives of each stock weighted by the proportion of investment into that stock.
     up_wealth *= up @ price_rels_day
     up_wealths.append(up_wealth)
     # Updating the wealth of each portfolio.
     portfolio_wealths *= portfolios @ price_rels_day
-    # Storing the wealth of the uniform portfolio for plotting later.
-    uniform_p_wealth *= uniform_p @ price_rels_day
-    uniform_p_wealths.append(uniform_p_wealth)
 
 
 # Outputting the performance of the algorithm.
@@ -132,10 +132,6 @@ for i in range(days):
     crp_wealths.append(crp_wealth)
 
 
-# Outputting the wealth of the uniform portfolio.
-print(f"The wealth of the uniform portfolio after {days} days was: {uniform_p_wealth}. \n")
-
-
 # Outputting the order of the stocks
 print(f"For reference, the order of the stocks in each portfolio is: {stocks}. \n")
 
@@ -146,7 +142,6 @@ for i in range(m):
     # These are normalised by their starting price to also begin at 1.
     plt.plot(prices_dict[stocks[i]] / prices_dict[stocks[i]][0], label=stocks[i])
 plt.plot(up_wealths, label="Universal Portfolio")
-plt.plot(uniform_p_wealths, label="Uniform Portfolio")
 plt.plot(crp_wealths, label="Best CRP")
 plt.title(f"Wealth Growth Over {days} Days")
 plt.xlabel("Day")
@@ -154,3 +149,19 @@ plt.ylabel("Wealth (arbitrary units)")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+
+# Plotting the variation of the proportion of each stock held in the Universal Portfolio.
+# Storing the portfolio vectors over time as an array.
+ups_arr = np.array(ups)
+# Transposing this array to get m vectors over time, one for each stock.
+ups_arr = ups_arr.T
+for i in range(m):
+    plt.plot(ups_arr[i], label=stocks[i])
+plt.title("Proportion of Stocks in Universal Portfolio Over Time")
+plt.ylabel("Proportion of Wealth")
+plt.xlabel("Days")
+plt.tight_layout()
+plt.legend()
+plt.show()
+

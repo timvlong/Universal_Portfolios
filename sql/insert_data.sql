@@ -1,13 +1,13 @@
 -- Inserting data from the .csv files to the database.
 
 
--- Adding Bitcoin USD data to the table.
+-- Adding GameStop data to the table.
 INSERT INTO raw_daily_info
-SELECT 'BTC-USD', date, close, volume
-FROM read_csv_auto('data/btc-usd.csv');
+SELECT 'GME', date, close, volume
+FROM read_csv_auto('data/gme.csv');
 
 
--- Adding Ethereum USD data to the table.
+-- Adding Nvidia data to the table.
 INSERT INTO raw_daily_info
-SELECT 'ETH-USD', date, close, volume
-FROM read_csv_auto('data/eth-usd.csv');
+SELECT 'NVDA', date, close, volume
+FROM read_csv_auto('data/nvda.csv');
