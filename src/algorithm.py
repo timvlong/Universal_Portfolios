@@ -1,5 +1,6 @@
 # Script for complete pipeline.
 # Creates, fills, queries and analyses the database.
+# Implements Thomas Cover's 'Universal Portfolios' algorithm.
 import duckdb
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,9 +22,10 @@ db_access.execute(insert_data_sql)
 
 # Creating a dictionary containing the array of close prices for each stock.
 output_prices_sql = open("sql/output_prices.sql", "r").read()
-all_prices = db_access.execute(output_prices_sql).fetchall()
+# Storing the stock names, dates and prices.
+stock_data = db_access.execute(output_prices_sql).fetchall()
 # Converting these lists of prices into NumPy arrays assigned to the stock name in a dictionary.
-prices_dict = {stock: np.array(prices) for stock, prices in all_prices}
+prices_dict = {stock: np.array(prices) for stock, dates, prices in stock_data}
 
 
 # Creating a function to output the price relative vector from the vector of close prices.
@@ -75,20 +77,27 @@ portfolios = np.random.dirichlet(alphas, size=N)
 
 # Storing the number of days for which we have price relative data.
 days = len(price_rels_dict[stocks[0]])
-# Ensuring we have the same number of days of data for each stock so they are comparable.
+# Ensuring we have the same days of data for each stock so they are comparable.
 # For instance, can't compare BTC-USD against SPY long-term easily because bitcoin is traded over more days.
 for i in range(1, m):
-    assert days == len(price_rels_dict[stocks[i]]), "The data is not compatible. Please adapt the timeframe in consideration or ensure both stocks have data on the same days."
+    # Comparing the array of dates of each stock.
+    assert stock_data[0][1] == stock_data[i][1], "The data is not compatible. Please adapt the timeframe in consideration or ensure both stocks have data on the same days."
+# If this is the case, we may use any of these dates vectors.
+dates = stock_data[0][1]
+# Determining the beginning and end of the investing period.
+start_date = min(dates)
+end_date = max(dates)
 
 
 # Giving each portfolio the same initial wealth of 1.
+# Under this assumption, the wealth is equivalent to the wealth relative.
 portfolio_wealths = np.ones(N)
 # Storing the wealth of the universal portfolio over time.
 up_wealths = []
 up_wealth = 1
 up_wealths.append(up_wealth)
 # Storing the universal portfolio vectors over time for plotting later.
-ups = []
+up_vectors = []
 
 
 # Iterating through each day to perform the 'Universal Portfolios' Algorithm.
@@ -99,37 +108,37 @@ for i in range(days):
     # Weighting the investment into each stock based on the performance of each portfolio.
     # If a portfolio has a larger wealth, you will trust that 'portfolio manager' more and use the stock proportions they did.
     # The @ here represents matrix multiplication.
-    up = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
+    up_vector = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
     # Storing this universal portfolio vector.
-    ups.append(up)
+    up_vectors.append(up_vector)
     # Calculating the factor by which the wealth of this universal portfolio increases.
     # This is equal to the sum of the price relatives of each stock weighted by the proportion of investment into that stock.
-    up_wealth *= up @ price_rels_day
+    up_wealth *= up_vector @ price_rels_day
     up_wealths.append(up_wealth)
     # Updating the wealth of each portfolio.
     portfolio_wealths *= portfolios @ price_rels_day
 
 
 # Outputting the performance of the algorithm.
-print(f"\n The wealth of the Universal Portfolio algorithm after {days} days was: {up_wealth}. The final portfolio vector was: {up}. \n")
+print(f"\n The wealth of the Universal Portfolio algorithm after {days} days was: {up_wealth}. The final portfolio vector was: {up_vector}. \n")
 
 
 # Finding the best performing constant, rebalanced portfolio with hindsight.
-best_crp_idx = np.argmax(portfolio_wealths)
-crp = portfolios[best_crp_idx]
-print(f"The wealth of the best performing constant, rebalanced portfolio after {days} days was: {portfolio_wealths[best_crp_idx]}. This was obtained with the portfolio vector: {crp}. \n")
+bcrp_idx = np.argmax(portfolio_wealths)
+bcrp_vector = portfolios[bcrp_idx]
+print(f"The wealth of the best performing constant, rebalanced portfolio after {days} days was: {portfolio_wealths[bcrp_idx]}. This was obtained with the portfolio vector: {bcrp_vector}. \n")
 
 
 # Determining the variation of the best CRP's wealth with time.
-crp_wealths = []
-crp_wealth = 1
-crp_wealths.append(crp_wealth)
+bcrp_wealths = []
+bcrp_wealth = 1
+bcrp_wealths.append(bcrp_wealth)
 for i in range(days):
     # Creating an array containing the price relatives on this day for each stock.
     price_rels_day = np.array([price_rels_dict[stock][i] for stock in stocks])
     # Storing the wealth of the best CRP for plotting later.
-    crp_wealth *= crp @ price_rels_day
-    crp_wealths.append(crp_wealth)
+    bcrp_wealth *= bcrp_vector @ price_rels_day
+    bcrp_wealths.append(bcrp_wealth)
 
 
 # Outputting the order of the stocks
@@ -142,10 +151,11 @@ for i in range(m):
     # These are normalised by their starting price to also begin at 1.
     plt.plot(prices_dict[stocks[i]] / prices_dict[stocks[i]][0], label=stocks[i])
 plt.plot(up_wealths, label="Universal Portfolio")
-plt.plot(crp_wealths, label="Best CRP")
-plt.title(f"Wealth Growth Over {days} Days")
+plt.plot(bcrp_wealths, label="Best CRP")
+plt.title(f"Wealth Growth from {start_date} to {end_date}")
 plt.xlabel("Day")
 plt.ylabel("Wealth (arbitrary units)")
+plt.grid(linestyle='--', alpha=0.5)
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -153,15 +163,16 @@ plt.show()
 
 # Plotting the variation of the proportion of each stock held in the Universal Portfolio.
 # Storing the portfolio vectors over time as an array.
-ups_arr = np.array(ups)
+ups_arr = np.array(up_vectors)
 # Transposing this array to get m vectors over time, one for each stock.
 ups_arr = ups_arr.T
 for i in range(m):
     plt.plot(ups_arr[i], label=stocks[i])
-plt.title("Proportion of Stocks in Universal Portfolio Over Time")
+plt.title(f"Proportion of Stocks Held from {start_date} to {end_date}")
 plt.ylabel("Proportion of Wealth")
 plt.xlabel("Days")
 plt.tight_layout()
+plt.grid(linestyle='--', alpha=0.5)
 plt.legend()
 plt.show()
 

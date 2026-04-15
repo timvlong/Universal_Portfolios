@@ -4,15 +4,14 @@ import pandas as pd
 
 
 # Choosing the stocks for consideration.
-# The Universal Portfolio algorithm performs best for volatile, uncorrelated stocks.
-# Thus we test with NVDA and GameStop. These are volatile and uncorrelated.
-stocks = ["NVDA", "GME"]
+# Currently testing the results using the S&P500 and Gold.
+stocks = ["^GSPC", "GLD"]
 for stock in stocks:
     # Downloading the stock prices, in units of the local currency, as a pandas DataFrame.
-    data = yf.download(stock, start="2020-01-01", end="2025-01-01")
-    # Storing the dates, close prices and volume.
-    data = data.reset_index()[["Date", "Close", "Volume"]]
+    data = yf.download(stock, start="2005-01-01", end="2025-01-01")
+    # Storing the dates and close prices.
+    data = data.reset_index()[["Date", "Close"]]
     # Renaming to align with SQL syntax.
-    data.columns = ["date", "close", "volume"]
+    data.columns = ["date", "close"]
     # Saving the data to a .csv file. Dropping the index column.
     data.to_csv("data/{}.csv".format(stock.lower()), index=False)

@@ -8,7 +8,5 @@ CREATE TABLE raw_daily_info (
     stock TEXT,
     date DATE,
     -- Setting close prices as floats.
-    close DOUBLE,
-    -- Setting volume as a large integer, ie no decimals.
-    volume BIGINT
+    close DOUBLE
 );
