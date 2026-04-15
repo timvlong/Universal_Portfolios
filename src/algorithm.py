@@ -63,7 +63,7 @@ stocks = list(price_rels_dict.keys())
 # Setting the number of portfolios to consider.
 # This is N in our Monte Carlo approximation of the integral over db.
 # Each b is a portfolio vector containing the proportions of the current wealth invested in each of the m stocks.
-N = 1000
+N = 100000
 # Calculating the number of stocks being considered.
 m = len(stocks)
 
@@ -149,9 +149,9 @@ print(f"For reference, the order of the stocks in each portfolio is: {stocks}. \
 for i in range(m):
     # Plotting the wealth if we were to invest in singular stocks.
     # These are normalised by their starting price to also begin at 1.
-    plt.plot(prices_dict[stocks[i]] / prices_dict[stocks[i]][0], label=stocks[i])
-plt.plot(up_wealths, label="Universal Portfolio")
-plt.plot(bcrp_wealths, label="Best CRP")
+    plt.plot(prices_dict[stocks[i]] / prices_dict[stocks[i]][0], label=stocks[i], lw=1)
+plt.plot(up_wealths, label="Universal Portfolio", lw=1)
+plt.plot(bcrp_wealths, label="Best CRP", lw=1)
 plt.title(f"Wealth Growth from {start_date} to {end_date}")
 plt.xlabel("Day")
 plt.ylabel("Wealth (arbitrary units)")
@@ -167,7 +167,7 @@ ups_arr = np.array(up_vectors)
 # Transposing this array to get m vectors over time, one for each stock.
 ups_arr = ups_arr.T
 for i in range(m):
-    plt.plot(ups_arr[i], label=stocks[i])
+    plt.plot(ups_arr[i], label=stocks[i], lw=1)
 plt.title(f"Proportion of Stocks Held from {start_date} to {end_date}")
 plt.ylabel("Proportion of Wealth")
 plt.xlabel("Days")

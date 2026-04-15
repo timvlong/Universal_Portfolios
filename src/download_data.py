@@ -4,11 +4,11 @@ import pandas as pd
 
 
 # Choosing the stocks for consideration.
-# Currently testing the results using the S&P500 and Gold.
-stocks = ["^GSPC", "GLD"]
+# Currently testing the results using Ford and Bank of America.
+stocks = ["F", "BAC"]
 for stock in stocks:
     # Downloading the stock prices, in units of the local currency, as a pandas DataFrame.
-    data = yf.download(stock, start="2005-01-01", end="2025-01-01")
+    data = yf.download(stock, start="1985-01-01", end="2025-01-01")
     # Storing the dates and close prices.
     data = data.reset_index()[["Date", "Close"]]
     # Renaming to align with SQL syntax.

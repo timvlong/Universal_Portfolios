@@ -1,13 +1,12 @@
 -- Inserting data from the .csv files to the database.
 
-
--- Adding GameStop data to the table.
+-- Adding Bank of America data to the table.
 INSERT INTO raw_daily_info
-SELECT '^GSPC', date, close
-FROM read_csv_auto('data/^gspc.csv');
+SELECT 'BAC', date, close
+FROM read_csv_auto('data/bac.csv');
 
 
--- Adding Nvidia data to the table.
+-- Adding Ford data to the table.
 INSERT INTO raw_daily_info
-SELECT 'GLD', date, close
-FROM read_csv_auto('data/gld.csv');
+SELECT 'F', date, close
+FROM read_csv_auto('data/f.csv');
