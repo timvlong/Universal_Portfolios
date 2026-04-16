@@ -145,18 +145,25 @@ for i in range(days):
 print(f"For reference, the order of the stocks in each portfolio is: {stocks}. \n")
 
 
-# Plotting the variation of wealth for each algorithm.
+# Plotting the variation of wealth and log wealth for each algorithm.
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (9, 4))
 for i in range(m):
-    # Plotting the wealth if we were to invest in singular stocks.
+    # Plotting the wealth and log wealth if we were to invest in singular stocks.
     # These are normalised by their starting price to also begin at 1.
-    plt.plot(prices_dict[stocks[i]] / prices_dict[stocks[i]][0], label=stocks[i], lw=1)
-plt.plot(up_wealths, label="Universal Portfolio", lw=1)
-plt.plot(bcrp_wealths, label="Best CRP", lw=1)
-plt.title(f"Wealth Growth from {start_date} to {end_date}")
-plt.xlabel("Day")
-plt.ylabel("Wealth (arbitrary units)")
-plt.grid(linestyle='--', alpha=0.5)
-plt.legend()
+    ax1.plot(prices_dict[stocks[i]] / prices_dict[stocks[i]][0], label=stocks[i], lw=0.5)
+    ax2.plot(np.log(prices_dict[stocks[i]] / prices_dict[stocks[i]][0]), label=stocks[i], lw=0.5)
+ax1.plot(up_wealths, label="Universal Portfolio", lw=0.5)
+ax2.plot(np.log(up_wealths), label="Universal Portfolio", lw=0.5)
+ax1.plot(bcrp_wealths, label="Best CRP", lw=0.5)
+ax2.plot(np.log(bcrp_wealths), label="Best CRP", lw=0.5)
+fig.suptitle(f"Wealth and Logarithmic Wealth Growth from {start_date} to {end_date}")
+ax1.set_xlabel("Day")
+ax2.set_xlabel("Day")
+ax1.set_ylabel("Wealth (arbitrary units)")
+ax2.set_ylabel("Logarithmic Wealth (arbitrary units)")
+ax1.grid(linestyle='--', alpha=0.5)
+ax2.grid(linestyle='--', alpha=0.5)
+ax1.legend()
 plt.tight_layout()
 plt.show()
 
