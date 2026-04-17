@@ -96,8 +96,8 @@ c = 0.001
 realloc = 1
 
 
-# Setting the rebalancing period in days.
-period = 1
+# Setting the rebalancing frequency in days.
+freq = 1
 
 
 # Giving each portfolio the same initial wealth of 1.
@@ -128,19 +128,31 @@ for i in range(days):
     # This is equal to the sum of the price relatives of each stock weighted by the proportion of investment into that stock.
     up_wealth *= (up_vectors[i] @ price_rels_day) * (1 - (c * realloc))
     up_wealths.append(up_wealth)
-    # Calculating my Universal portfolio vector based on this.
-    # Weighting the investment into each stock based on the performance of each portfolio.
-    # If a portfolio has a larger wealth, you will trust that 'portfolio manager' more and use the stock proportions they did.
-    # The @ here represents matrix multiplication.
-    up_vector = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
-    # Storing this Universal portfolio vector.
-    up_vectors.append(up_vector)
-    # Determining the amount of reallocation required to produce the current Universal portfolio.
-    realloc = np.abs(prb_vector - up_vector).sum()
+    # Rebalancing after every 'freq' days.
+    # The initialisation of the portfolio counts as the first rebalancing.
+    if (i+1) % freq == 0:
+        # Calculating my Universal portfolio vector based on this.
+        # Weighting the investment into each stock based on the performance of each portfolio.
+        # If a portfolio has a larger wealth, you will trust that 'portfolio manager' more and use the stock proportions they did.
+        # The @ here represents matrix multiplication.
+        up_vector = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
+        # Storing this Universal portfolio vector.
+        up_vectors.append(up_vector)
+        # Determining the amount of reallocation required to produce the current Universal portfolio.
+        realloc = np.abs(prb_vector - up_vector).sum()
+    # Continuing with the current portfolio otherwise.
+    # No transaction costs in this case.
+    else:
+        up_vector = prb_vector
+        # Storing this Universal portfolio vector.
+        up_vectors.append(up_vector)
+        # Setting no reallocation.
+        realloc = 0
+
 
 
 # Outputting the performance of the algorithm.
-print(f"\n The wealth of the Universal Portfolio algorithm after {days} days was: {up_wealth}. The final portfolio vector was: {up_vector}. \n")
+print(f"\nThe wealth of the Universal Portfolio algorithm after {days} days was: {up_wealth}. The final portfolio vector was: {up_vector}. \n")
 
 
 # Finding the best performing constant, rebalanced portfolio with hindsight.
@@ -153,6 +165,7 @@ print(f"The wealth of the best performing constant, rebalanced portfolio after {
 
 
 # Determining the variation of the best CRP's wealth with time.
+# As no transaction costs are considered, we shall rebalance daily and only compare to the Universal portfolio with no costs and daily rebalancing.
 bcrp_wealths = []
 bcrp_wealth = 1
 bcrp_wealths.append(bcrp_wealth)
