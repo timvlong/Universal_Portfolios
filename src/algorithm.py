@@ -58,21 +58,21 @@ price_rels_dict = {stock: calc_price_rels(prices) for stock, prices in prices_di
 
 # Extracting the stock names from the dictionary.
 stocks = list(price_rels_dict.keys())
+# Calculating the number of stocks being considered.
+m = len(stocks)
 
 
 # Setting the number of portfolios to consider.
 # This is N in our Monte Carlo approximation of the integral over db.
 # Each b is a portfolio vector containing the proportions of the current wealth invested in each of the m stocks.
-N = 100000
-# Calculating the number of stocks being considered.
-m = len(stocks)
+num = 100000
 
 
-# Randomly generating N vectors of length m with positive elements that sum to 1.
+# Randomly generating num vectors of length m with positive elements that sum to 1.
 # Using the Dirichlet distribution to produce a random probability distribution of size m.
 # Setting alpha = 1 to ensure a uniform distribution.
 alphas = np.ones(m)
-portfolios = np.random.dirichlet(alphas, size=N)
+portfolios = np.random.dirichlet(alphas, size=num)
 
 
 # Storing the number of days for which we have price relative data.
@@ -89,76 +89,93 @@ start_date = min(dates)
 end_date = max(dates)
 
 
+# Creating the function that performs Thomas Cover's 'Universal Portfolios' algorithm.
+def up_algo(c, num, freq):
+    """
+    Performs a version of Thomas Cover's 'Universal Portfolios' algorithm adapted to allow for varying transaction costs and rebalancing dates.
+
+    Parameters
+    ----------
+    c (float): Transaction cost proportionality constant.
+    num (integer): Number of 'Portfolio Managers' / portfolios considered in the Monte Carlo approximation.
+    freq (integer): Frequency of rebalancing, in days.
+
+    Returns
+    -------
+    up_wealths (list): Wealth of the Universal portfolio over time.
+    up_vectors (list): Universal portfolio vectors over time.
+    portfolio_wealths (num-dimensional NumPy array): Final wealth of each of the num portfolios.
+    """
+    # Setting the initial measure of reallocation to 1, as the portfolio must be built from scratch.
+    realloc = 1
+    # Giving each portfolio the same initial wealth of 1.
+    # Under this assumption, the wealth is equivalent to the wealth relative.
+    portfolio_wealths = np.ones(num)
+    # Storing the wealth of the Universal portfolio over time.
+    up_wealths = []
+    # The initial wealth is 1.
+    up_wealth = 1
+    up_wealths.append(up_wealth)
+    # Storing the Universal portfolio vectors over time for plotting later.
+    up_vectors = []
+    # Setting the initial Universal portfolio.
+    up_vector = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
+    up_vectors.append(up_vector)
+    # Iterating through each day to perform the 'Universal Portfolios' Algorithm.
+    for i in range(days):
+        # Creating an array containing the price relatives on this day for each stock.
+        price_rels_day = np.array([price_rels_dict[stock][i] for stock in stocks])
+        # Calculating the pre-rebalancing portfolio based on the previous Universal portfolio and the current stock market vector.
+        # Dividing by the wealth relative to normalise.
+        prb_vector = up_vectors[i] * price_rels_day / (up_vectors[i] @ price_rels_day)
+        # Updating the wealth of each portfolio.
+        portfolio_wealths *= portfolios @ price_rels_day
+        # Calculating the factor by which the wealth of this Universal portfolio increases.
+        # This is equal to the sum of the price relatives of each stock weighted by the proportion of investment into that stock.
+        up_wealth *= (up_vectors[i] @ price_rels_day) * (1 - (c * realloc))
+        up_wealths.append(up_wealth)
+        # Rebalancing after every 'freq' days.
+        # The initialisation of the portfolio counts as the first rebalancing.
+        if (i+1) % freq == 0:
+            # Calculating my Universal portfolio vector based on this.
+            # Weighting the investment into each stock based on the performance of each portfolio.
+            # If a portfolio has a larger wealth, you will trust that 'portfolio manager' more and use the stock proportions they did.
+            # The @ here represents matrix multiplication.
+            up_vector = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
+            # Storing this Universal portfolio vector.
+            up_vectors.append(up_vector)
+            # Determining the amount of reallocation required to produce the current Universal portfolio.
+            realloc = np.abs(prb_vector - up_vector).sum()
+        # Continuing with the current portfolio otherwise.
+        # No transaction costs in this case.
+        else:
+            up_vector = prb_vector
+            # Storing this Universal portfolio vector.
+            up_vectors.append(up_vector)
+            # Setting no reallocation.
+            realloc = 0
+    return up_wealths, up_vectors, portfolio_wealths
+
+
 # Setting the proportion by which the measure of reallocation impacts the transaction costs.
 # Currently set to 10 basis points.
 c = 0.001
-# Setting the initial measure of reallocation to 1, as the portfolio must be built from scratch.
-realloc = 1
-
-
 # Setting the rebalancing frequency in days.
 freq = 1
 
 
-# Giving each portfolio the same initial wealth of 1.
-# Under this assumption, the wealth is equivalent to the wealth relative.
-portfolio_wealths = np.ones(N)
-# Storing the wealth of the Universal portfolio over time.
-up_wealths = []
-# The initial wealth is 1.
-up_wealth = 1
-up_wealths.append(up_wealth)
-# Storing the Universal portfolio vectors over time for plotting later.
-up_vectors = []
-# Setting the initial Universal portfolio.
-up_vector = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
-up_vectors.append(up_vector)
-
-
-# Iterating through each day to perform the 'Universal Portfolios' Algorithm.
-for i in range(days):
-    # Creating an array containing the price relatives on this day for each stock.
-    price_rels_day = np.array([price_rels_dict[stock][i] for stock in stocks])
-    # Calculating the pre-rebalancing portfolio based on the previous Universal portfolio and the current stock market vector.
-    # Dividing by the wealth relative to normalise.
-    prb_vector = up_vectors[i] * price_rels_day / (up_vectors[i] @ price_rels_day)
-    # Updating the wealth of each portfolio.
-    portfolio_wealths *= portfolios @ price_rels_day
-    # Calculating the factor by which the wealth of this Universal portfolio increases.
-    # This is equal to the sum of the price relatives of each stock weighted by the proportion of investment into that stock.
-    up_wealth *= (up_vectors[i] @ price_rels_day) * (1 - (c * realloc))
-    up_wealths.append(up_wealth)
-    # Rebalancing after every 'freq' days.
-    # The initialisation of the portfolio counts as the first rebalancing.
-    if (i+1) % freq == 0:
-        # Calculating my Universal portfolio vector based on this.
-        # Weighting the investment into each stock based on the performance of each portfolio.
-        # If a portfolio has a larger wealth, you will trust that 'portfolio manager' more and use the stock proportions they did.
-        # The @ here represents matrix multiplication.
-        up_vector = portfolio_wealths @ portfolios / np.sum(portfolio_wealths)
-        # Storing this Universal portfolio vector.
-        up_vectors.append(up_vector)
-        # Determining the amount of reallocation required to produce the current Universal portfolio.
-        realloc = np.abs(prb_vector - up_vector).sum()
-    # Continuing with the current portfolio otherwise.
-    # No transaction costs in this case.
-    else:
-        up_vector = prb_vector
-        # Storing this Universal portfolio vector.
-        up_vectors.append(up_vector)
-        # Setting no reallocation.
-        realloc = 0
-
+# Performing the algorithm for the chosen parameters.
+up_wealths, up_vectors, portfolio_wealths = up_algo(c, num, freq)
 
 
 # Outputting the performance of the algorithm.
-print(f"\nThe wealth of the Universal Portfolio algorithm after {days} days was: {up_wealth}. The final portfolio vector was: {up_vector}. \n")
+print(f"\nThe wealth of the Universal Portfolio algorithm after {days} days was: {up_wealths[-1]}. The final portfolio vector was: {up_vectors[-1]}. \n")
 
 
 # Finding the best performing constant, rebalanced portfolio with hindsight.
 # This will remain transaction cost free (frictionless) as it becomes too complicated else.
 # For instance, upon implementing transaction, the clairvoyant investor with hindsight may choose to rebalance less.
-# Furthermore, we'd have to calculate the transaction costs over time of each of the N CRPs to determine which is best.
+# Furthermore, we'd have to calculate the transaction costs over time of each of the num CRPs to determine which is best.
 bcrp_idx = np.argmax(portfolio_wealths)
 bcrp_vector = portfolios[bcrp_idx]
 # Only fair to compare to the best constant rebalanced portfolio when there are no transactions costs and rebalancing occurs daily.
@@ -224,3 +241,63 @@ plt.grid(linestyle='--', alpha=0.5)
 plt.legend()
 plt.show()
 
+
+# Plotting the variation of the Universal portfolio with the magnitude of the transaction costs.
+# Selecting values of c to investigate.
+cs = [0, 0.001, 0.01, 0.1]
+for c in cs:
+    up_wealths, up_vectors, portfolio_wealths = up_algo(c, num, 1)
+    plt.plot(up_wealths, label=c, lw=0.5)
+plt.title(f"Effect of Transaction Costs on the Universal Portfolio")
+plt.xlabel("Day")
+plt.ylabel("Wealth (arbitrary units)")
+plt.tight_layout()
+plt.grid(linestyle='--', alpha=0.5)
+plt.legend()
+plt.show()
+
+
+# Plotting the variation of the Universal portfolio with the frequency of rebalancing.
+# Selecting values of freq to investigate.
+freqs = [1, 100, 1000, 5000]
+for freq in freqs:
+    up_wealths, up_vectors, portfolio_wealths = up_algo(0.001, num, freq)
+    plt.plot(up_wealths, label=freq, lw=0.5)
+plt.title(f"Effect of Rebalancing Frequency on the Universal Portfolio")
+plt.xlabel("Day")
+plt.ylabel("Wealth (arbitrary units)")
+plt.tight_layout()
+plt.grid(linestyle='--', alpha=0.5)
+plt.legend()
+plt.show()
+
+
+# As the amount of commission varies, the optimal rebalancing frequency does too.
+# We shall plot the optimal rebalancing frequency against commission.
+# This may be computationally expensive, so the granularity of the plot will be set to something very small by default.
+granularity = 20
+# Pre-setting the commision values we shall consider.
+cs = np.linspace(0, 0.1, granularity)
+# Creating vector to store the optimal frequencies.
+opt_freqs = np.zeros(granularity)
+# Pre-setting the frequency values we shall consider.
+freqs = np.linspace(1, 10000, granularity, dtype=int)
+for i in range(granularity):
+    # Storing the final wealth of the Universal portfolio under due to each combination of c and freq.
+    observed_wealths = np.zeros(granularity)
+    for j in range(granularity):
+        # Performing the algorithm using this value of c and freq.
+        up_wealths, up_vectors, portfolio_wealths = up_algo(cs[i], num, freqs[j])
+        # Saving the final wealth.
+        observed_wealths[j] = up_wealths[-1]
+    # Calculating the optimal index corresponding to the optimal frequency.
+    opt_idx = np.argmax(observed_wealths)
+    opt_freqs[i] = freqs[opt_idx]
+# Plotting the optimal rebalancing frequency against the transaction cost proportionality constant, c.
+plt.plot(cs, opt_freqs)
+plt.title("Effect of Varying Transaction Costs on Optimal Rebalancing Frequency")
+plt.xlabel("Transaction Cost Constant of Proportionality, c")
+plt.ylabel("Optimal Rebalancing Frequency")
+plt.tight_layout()
+plt.grid(linestyle='--', alpha=0.5)
+plt.show()
