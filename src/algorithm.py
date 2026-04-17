@@ -270,34 +270,3 @@ plt.tight_layout()
 plt.grid(linestyle='--', alpha=0.5)
 plt.legend()
 plt.show()
-
-
-# As the amount of commission varies, the optimal rebalancing frequency does too.
-# We shall plot the optimal rebalancing frequency against commission.
-# This may be computationally expensive, so the granularity of the plot will be set to something very small by default.
-granularity = 20
-# Pre-setting the commision values we shall consider.
-cs = np.linspace(0, 0.1, granularity)
-# Creating vector to store the optimal frequencies.
-opt_freqs = np.zeros(granularity)
-# Pre-setting the frequency values we shall consider.
-freqs = np.linspace(1, 10000, granularity, dtype=int)
-for i in range(granularity):
-    # Storing the final wealth of the Universal portfolio under due to each combination of c and freq.
-    observed_wealths = np.zeros(granularity)
-    for j in range(granularity):
-        # Performing the algorithm using this value of c and freq.
-        up_wealths, up_vectors, portfolio_wealths = up_algo(cs[i], num, freqs[j])
-        # Saving the final wealth.
-        observed_wealths[j] = up_wealths[-1]
-    # Calculating the optimal index corresponding to the optimal frequency.
-    opt_idx = np.argmax(observed_wealths)
-    opt_freqs[i] = freqs[opt_idx]
-# Plotting the optimal rebalancing frequency against the transaction cost proportionality constant, c.
-plt.plot(cs, opt_freqs)
-plt.title("Effect of Varying Transaction Costs on Optimal Rebalancing Frequency")
-plt.xlabel("Transaction Cost Constant of Proportionality, c")
-plt.ylabel("Optimal Rebalancing Frequency")
-plt.tight_layout()
-plt.grid(linestyle='--', alpha=0.5)
-plt.show()
