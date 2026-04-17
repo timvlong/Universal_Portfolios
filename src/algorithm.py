@@ -161,7 +161,9 @@ print(f"\nThe wealth of the Universal Portfolio algorithm after {days} days was:
 # Furthermore, we'd have to calculate the transaction costs over time of each of the N CRPs to determine which is best.
 bcrp_idx = np.argmax(portfolio_wealths)
 bcrp_vector = portfolios[bcrp_idx]
-print(f"The wealth of the best performing constant, rebalanced portfolio after {days} days was: {portfolio_wealths[bcrp_idx]}. This was obtained with the portfolio vector: {bcrp_vector}. \n")
+# Only fair to compare to the best constant rebalanced portfolio when there are no transactions costs and rebalancing occurs daily.
+if c == 0 and freq == 1:
+    print(f"The wealth of the best performing constant, rebalanced portfolio after {days} days was: {portfolio_wealths[bcrp_idx]}. This was obtained with the portfolio vector: {bcrp_vector}. \n")
 
 
 # Determining the variation of the best CRP's wealth with time.
@@ -186,12 +188,15 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (9, 4))
 for i in range(m):
     # Plotting the wealth and log wealth if we were to invest in singular stocks.
     # These are normalised by their starting price to also begin at 1.
-    ax1.plot(prices_dict[stocks[i]] / prices_dict[stocks[i]][0], label=stocks[i], lw=0.5)
-    ax2.plot(np.log(prices_dict[stocks[i]] / prices_dict[stocks[i]][0]), label=stocks[i], lw=0.5)
+    # A transaction cost is requried to build each portfolio but no more after as this is a buy and hold strategy.
+    ax1.plot((prices_dict[stocks[i]] * (1 - c)) / prices_dict[stocks[i]][0], label=stocks[i], lw=0.5)
+    ax2.plot(np.log((prices_dict[stocks[i]] * (1 - c)) / prices_dict[stocks[i]][0]), label=stocks[i], lw=0.5)
 ax1.plot(up_wealths, label="Universal Portfolio", lw=0.5)
 ax2.plot(np.log(up_wealths), label="Universal Portfolio", lw=0.5)
-ax1.plot(bcrp_wealths, label="Best CRP", lw=0.5)
-ax2.plot(np.log(bcrp_wealths), label="Best CRP", lw=0.5)
+# Only fair to compare to the best constant rebalanced portfolio when there are no transactions costs and rebalancing occurs daily.
+if c == 0 and freq == 1:
+    ax1.plot(bcrp_wealths, label="Best CRP", lw=0.5)
+    ax2.plot(np.log(bcrp_wealths), label="Best CRP", lw=0.5)
 fig.suptitle(f"Wealth and Logarithmic Wealth Growth from {start_date} to {end_date}")
 ax1.set_xlabel("Day")
 ax2.set_xlabel("Day")
@@ -213,7 +218,7 @@ for i in range(m):
     plt.plot(ups_arr[i], label=stocks[i], lw=1)
 plt.title(f"Proportion of Stocks Held from {start_date} to {end_date}")
 plt.ylabel("Proportion of Wealth")
-plt.xlabel("Days")
+plt.xlabel("Day")
 plt.tight_layout()
 plt.grid(linestyle='--', alpha=0.5)
 plt.legend()
