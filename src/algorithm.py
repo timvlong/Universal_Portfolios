@@ -93,6 +93,7 @@ end_date = max(dates)
 def up_algo(c, num, freq):
     """
     Performs a version of Thomas Cover's 'Universal Portfolios' algorithm adapted to allow for varying transaction costs and rebalancing dates.
+    Rebalancing based on constant frequencies.
 
     Parameters
     ----------
@@ -270,3 +271,4 @@ plt.tight_layout()
 plt.grid(linestyle='--', alpha=0.5)
 plt.legend()
 plt.show()
+
