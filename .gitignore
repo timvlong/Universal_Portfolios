@@ -1,2 +1,6 @@
 venv/
 .DS_Store
+database.duckdb
+data/*.csv
+CLAUDE.md
+.claude/settings.local.json
